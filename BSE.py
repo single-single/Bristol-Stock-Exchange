@@ -1893,10 +1893,10 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
     if dump_all:
 
         # dump the tape (transactions only -- not dumping cancellations)
-        exchange.tape_dump(sess_id+'_transactions.csv', 'w', 'keep')
+        exchange.tape_dump('records/'+sess_id+'_transactions.csv', 'w', 'keep')
 
         # record the blotter for each trader
-        bdump = open(sess_id+'_blotters.csv', 'w')
+        bdump = open('records/'+sess_id+'_blotters.csv', 'w')
         for t in traders:
             bdump.write('%s, %d\n'% (traders[t].tid, len(traders[t].blotter)))
             for b in traders[t].blotter:
@@ -1973,10 +1973,10 @@ if __name__ == "__main__":
     verbose = True
 
     # n_trials is how many trials (i.e. market sessions) to run in total
-    n_trials = 6
+    n_trials = 1
 
     # n_recorded is how many trials (i.e. market sessions) to write full data-files for
-    n_trials_recorded = 3
+    n_trials_recorded = 1
 
     tdump=open('avg_balance.csv','w')
 
