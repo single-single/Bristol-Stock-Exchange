@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 def process_results(trial_id):
     avg_balance = pd.read_csv("records/avg_balance.csv", header=None,
-                              names=list(string.ascii_uppercase)[0:22],
+                              names=list(string.ascii_uppercase)[0:26],
                               index_col=False)
 
     avg_balance = avg_balance[avg_balance["A"] == trial_id]
@@ -17,9 +17,9 @@ def process_results(trial_id):
     avg_balance["C"] = avg_balance["C"].astype("float", errors="ignore")
     avg_balance["D"] = avg_balance["D"].astype("float", errors="ignore")
 
-    new_names_agents = {"H": "GVWY", "L": "SHVR", "P": "ZIC", "T": "ZIP"}
+    new_names_agents = {"H": "GVWY", "L": "SHVR", "P": "ZIC", "T": "ZIP", "X": "INSP"}
     avg_balance.rename(columns=new_names_agents, inplace=True)
-    avg_balance.plot(x="B", y=["GVWY", "SHVR", "ZIC", "ZIP"], kind="line")
+    avg_balance.plot(x="B", y=["GVWY", "SHVR", "ZIC", "ZIP", "INSP"], kind="line")
     plt.show(block=True)
 
     new_names_bests = {"C": "Best Bid", "D": "Best Ask"}

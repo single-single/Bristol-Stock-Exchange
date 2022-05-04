@@ -447,6 +447,73 @@ class Trader:
         return None
 
 
+# Trader subclass Insider
+# Idealised trader, knowing that the equilibrium price is 100 pence
+class Trader_Insider(Trader):
+
+    def getorder(self, time, countdown, lob):
+        if len(self.orders) < 1:
+            order = None
+        else:
+            qid = lob['QID']
+            limit = self.orders[0].price
+            otype = self.orders[0].otype
+            if otype == 'Bid':
+                if limit > 100:
+                    quoteprice = 100
+                else:
+                    quoteprice = limit
+            else:
+                if limit < 100:
+                    quoteprice = 100
+                else:
+                    quoteprice = limit
+                # NB should check it == 'Ask' and barf if not
+            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
+            self.lastquote = order
+        return order
+
+
+# Trader subclass Insider Plus
+# A realistic version of Insider, estimating the equilibrium price itself
+class Trader_InsiderP(Trader):
+
+    def __init__(self, ttype, tid, balance, time):
+        Trader.__init__(self, ttype, tid, balance, time)
+        self.predict = 0
+
+    def getorder(self, time, countdown, lob):
+        if len(self.orders) < 1:
+            order = None
+        else:
+            qid = lob['QID']
+            limit = self.orders[0].price
+            otype = self.orders[0].otype
+            if otype == 'Bid':
+                if limit > self.predict:
+                    quoteprice = self.predict
+                else:
+                    quoteprice = limit
+            else:
+                if limit < self.predict:
+                    quoteprice = self.predict
+                else:
+                    quoteprice = limit
+                # NB should check it == 'Ask' and barf if not
+            order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
+            self.lastquote = order
+        return order
+
+    def respond(self, time, lob, trade, verbose):
+        trade_n = 0.1
+        trade_total = 0.1
+        for tapeitem in lob['tape']:
+            if tapeitem['type'] == 'Trade':
+                trade_total += tapeitem['price']
+                trade_n += 1
+        self.predict = trade_total / trade_n
+
+
 # Trader subclass Giveaway
 # even dumber than a ZI-U: just give the deal away
 # (but never makes a loss)
@@ -1546,6 +1613,10 @@ def populate_market(traders_spec, traders, shuffle, verbose):
             return Trader_PRZI('PRZI', name, 0.00, 0)
         elif robottype == 'PRSH':
             return Trader_PRZI_SHC('PRSH', name, 0.00, 0)
+        elif robottype == 'INSD':
+            return Trader_Insider('INSD', name, 0.00, 0)
+        elif robottype == 'INSP':
+            return Trader_InsiderP('INSP', name, 0.00, 0)
         else:
             sys.exit('FATAL: don\'t know robot type %s\n' % robottype)
 
@@ -1950,8 +2021,8 @@ if __name__ == "__main__":
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
     #               'interval': 30, 'timemode': 'periodic'}
 
-    buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10)]
-    sellers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10)]
+    buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSP', 10)]
+    sellers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSP', 10)]
 
     traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
