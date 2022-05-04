@@ -51,6 +51,7 @@ import math
 import random
 import processResults
 
+noise = 0 # noise to the price quoted
 bse_sys_minprice = 1  # minimum price in the system, in cents/pennies
 bse_sys_maxprice = 1000  # maximum price in the system, in cents/pennies
 ticksize = 1  # minimum change in price, in cents/pennies
@@ -427,11 +428,11 @@ class Trader:
         self.n_trades += 1
         self.profitpertime = self.balance / (time - self.birthtime)
 
-        if profit < 0:
-            print(profit)
-            print(trade)
-            print(order)
-            sys.exit()
+        # if profit < 0:
+        #     print(profit)
+        #     print(trade)
+        #     print(order)
+        #     sys.exit()
 
         if verbose: print('%s profit=%d balance=%d profit/time=%d' % (outstr, profit, self.balance, self.profitpertime))
         self.del_order(order)  # delete the order
@@ -469,6 +470,7 @@ class Trader_Insider(Trader):
                 else:
                     quoteprice = limit
                 # NB should check it == 'Ask' and barf if not
+            quoteprice += noise
             order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
             self.lastquote = order
         return order
@@ -500,6 +502,7 @@ class Trader_InsiderP(Trader):
                 else:
                     quoteprice = limit
                 # NB should check it == 'Ask' and barf if not
+            quoteprice += noise
             order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
             self.lastquote = order
         return order
@@ -524,6 +527,7 @@ class Trader_Giveaway(Trader):
             order = None
         else:
             quoteprice = self.orders[0].price
+            quoteprice += noise
             order = Order(self.tid,
                           self.orders[0].otype,
                           quoteprice,
@@ -552,6 +556,7 @@ class Trader_ZIC(Trader):
             else:
                 quoteprice = random.randint(limit, maxprice)
                 # NB should check it == 'Ask' and barf if not
+            quoteprice += noise
             order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, qid)
             self.lastquote = order
         return order
@@ -582,6 +587,7 @@ class Trader_Shaver(Trader):
                         quoteprice = limitprice
                 else:
                     quoteprice = lob['asks']['worst']
+            quoteprice += noise
             order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
             self.lastquote = order
         return order
@@ -617,6 +623,7 @@ class Trader_Sniper(Trader):
                         quoteprice = limitprice
                 else:
                     quoteprice = lob['asks']['worst']
+            quoteprice += noise
             order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
             self.lastquote = order
         return order
@@ -858,6 +865,7 @@ class Trader_PRZI(Trader):
                     quoteprice = entry['price']
                     break
 
+            quoteprice += noise
             order = Order(self.tid, otype,
                           quoteprice, self.orders[0].qty, time, lob['QID'])
 
@@ -1163,6 +1171,7 @@ class Trader_PRZI_SHC(Trader):
                     quoteprice = entry['price']
                     break
 
+            quoteprice += noise
             order = Order(self.tid, otype, quoteprice, self.orders[0].qty, time, lob['QID'])
 
             self.lastquote = order
@@ -1379,6 +1388,7 @@ class Trader_ZIP(Trader):
             quoteprice = int(self.limit * (1 + self.margin))
             self.price = quoteprice
 
+            quoteprice += noise
             order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
             self.lastquote = order
         return order
@@ -1923,10 +1933,10 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
         # if verbose: print('Trader Quote: %s' % (order))
 
         if order is not None:
-            if order.otype == 'Ask' and order.price < traders[tid].orders[0].price:
-                sys.exit('Bad ask')
-            if order.otype == 'Bid' and order.price > traders[tid].orders[0].price:
-                sys.exit('Bad bid')
+            # if order.otype == 'Ask' and order.price < traders[tid].orders[0].price:
+            #     sys.exit('Bad ask')
+            # if order.otype == 'Bid' and order.price > traders[tid].orders[0].price:
+            #     sys.exit('Bad bid')
             # send order to exchange
             traders[tid].n_quotes = 1
             trade = exchange.process_order2(time, order, process_verbose)
@@ -2021,8 +2031,10 @@ if __name__ == "__main__":
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
     #               'interval': 30, 'timemode': 'periodic'}
 
-    buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSP', 10)]
-    sellers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSP', 10)]
+    noise_level = 0
+
+    buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSD', 10)]
+    sellers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSD', 10)]
 
     traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
@@ -2031,10 +2043,10 @@ if __name__ == "__main__":
     verbose = True
 
     # n_trials is how many trials (i.e. market sessions) to run in total
-    n_trials = 2
+    n_trials = 3
 
     # n_recorded is how many trials (i.e. market sessions) to write full data-files for
-    n_trials_recorded = 2
+    n_trials_recorded = 3
 
     tdump = open('records/avg_balance.csv', 'w')
 
@@ -2047,6 +2059,9 @@ if __name__ == "__main__":
             dump_all = False
         else:
             dump_all = True
+
+        noise_level += 5
+        noise = random.randint(-noise_level, noise_level)
 
         market_session(trial_id, start_time, end_time, traders_spec, order_sched, tdump, dump_all, verbose)
         tdump.flush()

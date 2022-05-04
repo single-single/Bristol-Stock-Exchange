@@ -17,9 +17,9 @@ def process_results(trial_id):
     avg_balance["C"] = avg_balance["C"].astype("float", errors="ignore")
     avg_balance["D"] = avg_balance["D"].astype("float", errors="ignore")
 
-    new_names_agents = {"H": "GVWY", "L": "SHVR", "P": "ZIC", "T": "ZIP", "X": "INSP"}
+    new_names_agents = {"H": "GVWY", "L": "SHVR", "P": "ZIC", "T": "ZIP", "X": "INSD"}
     avg_balance.rename(columns=new_names_agents, inplace=True)
-    avg_balance.plot(x="B", y=["GVWY", "SHVR", "ZIC", "ZIP", "INSP"], kind="line")
+    avg_balance.plot(x="B", y=["GVWY", "SHVR", "ZIC", "ZIP", "INSD"], kind="line")
     plt.show(block=True)
 
     new_names_bests = {"C": "Best Bid", "D": "Best Ask"}
