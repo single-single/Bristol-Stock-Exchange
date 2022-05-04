@@ -509,11 +509,15 @@ class Trader_InsiderP(Trader):
 
     def respond(self, time, lob, trade, verbose):
         trade_n = 0.1
-        trade_total = 0.1
+        trade_total = 0
+        trade_prices = []
+        limit_number = 30
         for tapeitem in lob['tape']:
             if tapeitem['type'] == 'Trade':
-                trade_total += tapeitem['price']
-                trade_n += 1
+                trade_prices.append(tapeitem['price'])
+                trade_prices = trade_prices[-limit_number:]
+        trade_n += len(trade_prices)
+        trade_total = sum(trade_prices)
         self.predict = trade_total / trade_n
 
 
@@ -2043,10 +2047,10 @@ if __name__ == "__main__":
     verbose = True
 
     # n_trials is how many trials (i.e. market sessions) to run in total
-    n_trials = 3
+    n_trials = 1
 
     # n_recorded is how many trials (i.e. market sessions) to write full data-files for
-    n_trials_recorded = 3
+    n_trials_recorded = 1
 
     tdump = open('records/avg_balance.csv', 'w')
 
