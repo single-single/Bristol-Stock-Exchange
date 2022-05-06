@@ -2132,10 +2132,6 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
     # initialise the exchange
     exchange = Exchange()
 
-    # create a bunch of traders
-    traders = {}
-    trader_stats = populate_market(trader_spec, traders, False, populate_verbose)
-
     # create a list of trader indices that vary in number
     delay_level = 1
     weighted_traders = []
@@ -2146,13 +2142,19 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
     for i, v in enumerate(seller_traders):
         append_offset += v[1]
         for j in range(v[1]):
-            for k in range(delay_level * i + 1):
+            for k in range(delay_level * i + len(seller_traders)):
                 weighted_traders.append(i * v[1] + j)
 
     for i, v in enumerate(buyer_traders):
         for j in range(v[1]):
-            for k in range(delay_level * i + 1):
+            for k in range(delay_level * i + len(buyer_traders)):
                 weighted_traders.append(i * v[1] + j + append_offset)
+
+    random.shuffle(weighted_traders)
+
+    # create a bunch of traders
+    traders = {}
+    trader_stats = populate_market(trader_spec, traders, not delay, populate_verbose)
 
     # timestep set so that can process all traders in one second
     # NB minimum interarrival time of customer orders may be much less than this!!
@@ -2299,7 +2301,7 @@ if __name__ == "__main__":
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
     #               'interval': 30, 'timemode': 'periodic'}
 
-    delay = False
+    delay = True
     noise_level = 0
 
     buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSD', 10)]
