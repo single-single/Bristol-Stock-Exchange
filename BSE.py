@@ -1389,9 +1389,8 @@ class Trader_ZIP(Trader):
                 # currently a seller (working a sell order)
                 self.margin = self.margin_sell
             quoteprice = int(self.limit * (1 + self.margin))
-            self.price = quoteprice
-
             quoteprice += noise
+            self.price = quoteprice
             order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
             self.lastquote = order
         return order
@@ -1594,18 +1593,23 @@ class Trader_GDX(Trader):
 
             # calculate price
             if self.job == 'Bid':
-                self.price = self.calc_p_bid(self.holdings - 1, self.remaining_offer_ops - 1)
-            if self.job == 'Ask':
-                self.price = self.calc_p_ask(self.holdings - 1, self.remaining_offer_ops - 1)
+                quoteprice = self.calc_p_bid(self.holdings - 1, self.remaining_offer_ops - 1)
+            else:
+                quoteprice = self.calc_p_ask(self.holdings - 1, self.remaining_offer_ops - 1)
+            quoteprice += noise
+            self.price = quoteprice
+            order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
 
-            order = Order(self.tid, self.job, self.price, self.orders[0].qty, time, lob['QID'])
+            if self.first_turn or self.price == -1:
+                if self.job == 'Bid':
+                    quoteprice = bse_sys_minprice + 1
+                else:
+                    quoteprice = bse_sys_maxprice - 1
+                quoteprice += noise
+                self.price = quoteprice
+                order = Order(self.tid, self.job, quoteprice, self.orders[0].qty, time, lob['QID'])
+
             self.lastquote = order
-
-        if self.first_turn or self.price == -1:
-            if self.job == 'Bid':
-                order = Order(self.tid, self.job, bse_sys_minprice + 1, self.orders[0].qty, time, lob['QID'])
-            if self.job == 'Ask':
-                order = Order(self.tid, self.job, bse_sys_maxprice - 1, self.orders[0].qty, time, lob['QID'])
 
         return order
 
@@ -2117,7 +2121,7 @@ def customer_orders(time, last_update, traders, trader_stats, os, pending, verbo
 
 
 # one session in the market
-def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdump, dump_all, verbose):
+def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdump, dump_all, verbose, delay):
     orders_verbose = False
     lob_verbose = False
     process_verbose = False
@@ -2130,7 +2134,25 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
 
     # create a bunch of traders
     traders = {}
-    trader_stats = populate_market(trader_spec, traders, True, populate_verbose)
+    trader_stats = populate_market(trader_spec, traders, False, populate_verbose)
+
+    # create a list of trader indices that vary in number
+    delay_level = 1
+    weighted_traders = []
+    seller_traders = trader_spec['sellers']
+    buyer_traders = trader_spec['buyers']
+    append_offset = 0
+
+    for i, v in enumerate(seller_traders):
+        append_offset += v[1]
+        for j in range(v[1]):
+            for k in range(delay_level * i + 1):
+                weighted_traders.append(i * v[1] + j)
+
+    for i, v in enumerate(buyer_traders):
+        for j in range(v[1]):
+            for k in range(delay_level * i + 1):
+                weighted_traders.append(i * v[1] + j + append_offset)
 
     # timestep set so that can process all traders in one second
     # NB minimum interarrival time of customer orders may be much less than this!!
@@ -2168,8 +2190,12 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
                     # if verbose : print('Killing order %s' % (str(traders[kill].lastquote)))
                     exchange.del_order(time, traders[kill].lastquote, verbose)
 
-        # get a limit-order quote (or None) from a randomly chosen trader
-        tid = list(traders.keys())[random.randint(0, len(traders) - 1)]
+        # get a limit-order quote (or None) from a (weighted) randomly chosen trader
+        if delay:
+            trader_index = random.choice(weighted_traders)
+        else:
+            trader_index = random.randint(0, len(traders) - 1)
+        tid = list(traders.keys())[trader_index]
         order = traders[tid].getorder(time, time_left, exchange.publish_lob(time, lob_verbose))
 
         # if verbose: print('Trader Quote: %s' % (order))
@@ -2273,6 +2299,7 @@ if __name__ == "__main__":
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
     #               'interval': 30, 'timemode': 'periodic'}
 
+    delay = False
     noise_level = 0
 
     buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSD', 10)]
@@ -2285,10 +2312,10 @@ if __name__ == "__main__":
     verbose = True
 
     # n_trials is how many trials (i.e. market sessions) to run in total
-    n_trials = 1
+    n_trials = 3
 
     # n_recorded is how many trials (i.e. market sessions) to write full data-files for
-    n_trials_recorded = 1
+    n_trials_recorded = 3
 
     tdump = open('records/avg_balance.csv', 'w')
 
@@ -2302,12 +2329,12 @@ if __name__ == "__main__":
         else:
             dump_all = True
 
-        noise_level += 5
-        noise = random.randint(-noise_level, noise_level)
-
-        market_session(trial_id, start_time, end_time, traders_spec, order_sched, tdump, dump_all, verbose)
+        market_session(trial_id, start_time, end_time, traders_spec, order_sched, tdump, dump_all, verbose, delay)
         tdump.flush()
         trial = trial + 1
+
+        noise_level += 5
+        noise = random.randint(-noise_level, noise_level)
 
         processResults.process_results(trial_id)
 
