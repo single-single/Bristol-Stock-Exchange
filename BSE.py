@@ -2304,8 +2304,8 @@ if __name__ == "__main__":
     delay = True
     noise_level = 0
 
-    buyers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSD', 10)]
-    sellers_spec = [('GVWY', 10), ('SHVR', 10), ('ZIC', 10), ('ZIP', 10), ('INSD', 10)]
+    buyers_spec = [('INSD', 10), ('ZIP', 10), ('ZIC', 10), ('SHVR', 10), ('GVWY', 10)]
+    sellers_spec = [('INSD', 10), ('ZIP', 10), ('ZIC', 10), ('SHVR', 10), ('GVWY', 10)]
 
     traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
