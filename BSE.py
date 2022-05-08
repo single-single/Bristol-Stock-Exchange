@@ -2297,11 +2297,11 @@ if __name__ == "__main__":
                        ]
 
     order_sched = {'sup': supply_schedule, 'dem': demand_schedule,
-                   'interval': 30, 'timemode': 'drip-poisson'}
+    #              'interval': 30, 'timemode': 'drip-poisson'}
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
-    #               'interval': 30, 'timemode': 'periodic'}
+                   'interval': 30, 'timemode': 'periodic'}
 
-    delay = True
+    delay = False
     noise_level = 0
 
     buyers_spec = [('INSD', 10), ('ZIP', 10), ('ZIC', 10), ('SHVR', 10), ('GVWY', 10)]
@@ -2323,6 +2323,8 @@ if __name__ == "__main__":
 
     trial = 1
 
+    trial_balances = []
+
     while trial < (n_trials + 1):
         trial_id = 'sess%04d' % trial
 
@@ -2338,50 +2340,13 @@ if __name__ == "__main__":
         noise_level += 5
         noise = random.randint(-noise_level, noise_level)
 
-        processResults.process_results(trial_id)
+        is_figure1 = True
+        is_figure2 = True
+        is_figure3 = True
+        is_figure4 = True
+        is_last_trial = False
+        if trial == n_trials + 1:
+            is_last_trial = True
+        processResults.process_results(trial_id, trial_balances, is_last_trial, is_figure1, is_figure2, is_figure3, is_figure4)
 
     tdump.close()
-
-    # run a sequence of trials that exhaustively varies the ratio of four trader types
-    # NB this has weakness of symmetric proportions on buyers/sellers -- combinatorics of varying that are quite nasty
-    #
-    # n_trader_types = 4
-    # equal_ratio_n = 4
-    # n_trials_per_ratio = 50
-    #
-    # n_traders = n_trader_types * equal_ratio_n
-    #
-    # fname = 'balances_%03d.csv' % equal_ratio_n
-    #
-    # tdump = open(fname, 'w')
-    #
-    # min_n = 1
-    #
-    # trialnumber = 1
-    # trdr_1_n = min_n
-    # while trdr_1_n <= n_traders:
-    #     trdr_2_n = min_n
-    #     while trdr_2_n <= n_traders - trdr_1_n:
-    #         trdr_3_n = min_n
-    #         while trdr_3_n <= n_traders - (trdr_1_n + trdr_2_n):
-    #             trdr_4_n = n_traders - (trdr_1_n + trdr_2_n + trdr_3_n)
-    #             if trdr_4_n >= min_n:
-    #                 buyers_spec = [('GVWY', trdr_1_n), ('SHVR', trdr_2_n),
-    #                                ('ZIC', trdr_3_n), ('ZIP', trdr_4_n)]
-    #                 sellers_spec = buyers_spec
-    #                 traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
-    #                 # print buyers_spec
-    #                 trial = 1
-    #                 while trial <= n_trials_per_ratio:
-    #                     trial_id = 'trial%07d' % trialnumber
-    #                     market_session(trial_id, start_time, end_time, traders_spec,
-    #                                    order_sched, tdump, False, True)
-    #                     tdump.flush()
-    #                     trial = trial + 1
-    #                     trialnumber = trialnumber + 1
-    #             trdr_3_n += 1
-    #         trdr_2_n += 1
-    #     trdr_1_n += 1
-    # tdump.close()
-    #
-    # print(trialnumber)
