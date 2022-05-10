@@ -51,7 +51,9 @@ import math
 import random
 import processResults
 
-noise = 0 # noise to the price quoted
+# random.seed(10) # set the seed to make the experiment reproducible
+noise = 0  # noise to the price quoted
+delay_level = 0  # level of delay to traders
 bse_sys_minprice = 1  # minimum price in the system, in cents/pennies
 bse_sys_maxprice = 1000  # maximum price in the system, in cents/pennies
 ticksize = 1  # minimum change in price, in cents/pennies
@@ -1622,7 +1624,7 @@ class Trader_GDX(Trader):
         # first step size of 1 get best and 2nd best
         for i in [x * 2 for x in range(int(self.limit / 2))]:
             thing = self.belief_buy(i) * ((self.limit - i) + self.gamma * self.values[m - 1][n - 1]) + (
-                        1 - self.belief_buy(i) * self.gamma * self.values[m][n - 1])
+                    1 - self.belief_buy(i) * self.gamma * self.values[m][n - 1])
             if thing > best_return:
                 second_best_bid = best_bid
                 second_best_return = best_return
@@ -1638,8 +1640,8 @@ class Trader_GDX(Trader):
         # then step size 0.05
         for i in [x * 0.05 for x in range(int(second_best_bid), int(best_bid))]:
             thing = self.belief_buy(i + second_best_bid) * (
-                        (self.limit - (i + second_best_bid)) + self.gamma * self.values[m - 1][n - 1]) + (
-                                1 - self.belief_buy(i + second_best_bid) * self.gamma * self.values[m][n - 1])
+                    (self.limit - (i + second_best_bid)) + self.gamma * self.values[m - 1][n - 1]) + (
+                            1 - self.belief_buy(i + second_best_bid) * self.gamma * self.values[m][n - 1])
             if thing > best_return:
                 best_return = thing
                 best_bid = i + second_best_bid
@@ -1656,7 +1658,7 @@ class Trader_GDX(Trader):
         for i in [x * 2 for x in range(int(self.limit / 2))]:
             j = i + self.limit
             thing = self.belief_sell(j) * ((j - self.limit) + self.gamma * self.values[m - 1][n - 1]) + (
-                        1 - self.belief_sell(j) * self.gamma * self.values[m][n - 1])
+                    1 - self.belief_sell(j) * self.gamma * self.values[m][n - 1])
             if thing > best_return:
                 second_best_ask = best_ask
                 second_best_return = best_return
@@ -1671,8 +1673,8 @@ class Trader_GDX(Trader):
         # then step size 0.05
         for i in [x * 0.05 for x in range(int(second_best_ask), int(best_ask))]:
             thing = self.belief_sell(i + second_best_ask) * (
-                        ((i + second_best_ask) - self.limit) + self.gamma * self.values[m - 1][n - 1]) + (
-                                1 - self.belief_sell(i + second_best_ask) * self.gamma * self.values[m][n - 1])
+                    ((i + second_best_ask) - self.limit) + self.gamma * self.values[m - 1][n - 1]) + (
+                            1 - self.belief_sell(i + second_best_ask) * self.gamma * self.values[m][n - 1])
             if thing > best_return:
                 best_return = thing
                 best_ask = i + second_best_ask
@@ -1696,7 +1698,7 @@ class Trader_GDX(Trader):
         if accepted_asks_greater + bids_greater + unaccepted_asks_lower == 0:
             return 0
         return (accepted_asks_greater + bids_greater) / (
-                    accepted_asks_greater + bids_greater + unaccepted_asks_lower)
+                accepted_asks_greater + bids_greater + unaccepted_asks_lower)
 
     def belief_buy(self, price):
         accepted_bids_lower = 0
@@ -2133,7 +2135,6 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
     exchange = Exchange()
 
     # create a list of trader indices that vary in number
-    delay_level = 1
     weighted_traders = []
     seller_traders = trader_spec['sellers']
     buyer_traders = trader_spec['buyers']
@@ -2142,12 +2143,12 @@ def market_session(sess_id, starttime, endtime, trader_spec, order_schedule, tdu
     for i, v in enumerate(seller_traders):
         append_offset += v[1]
         for j in range(v[1]):
-            for k in range(delay_level * i + len(seller_traders)):
+            for k in range(len(seller_traders)):
                 weighted_traders.append(i * v[1] + j)
 
     for i, v in enumerate(buyer_traders):
         for j in range(v[1]):
-            for k in range(delay_level * i + len(buyer_traders)):
+            for k in range(delay_level + len(buyer_traders)):
                 weighted_traders.append(i * v[1] + j + append_offset)
 
     random.shuffle(weighted_traders)
@@ -2289,23 +2290,23 @@ if __name__ == "__main__":
     # The code below sets up symmetric supply and demand curves at prices from 50 to 150, P0=100
 
     range1 = (50, 150)
-    supply_schedule = [{'from': start_time, 'to': end_time, 'ranges': [range1], 'stepmode': 'fixed'}
+    supply_schedule = [{'from': start_time, 'to': end_time, 'ranges': [range1], 'stepmode': 'jittered'}
                        ]
 
     range2 = (50, 150)
-    demand_schedule = [{'from': start_time, 'to': end_time, 'ranges': [range2], 'stepmode': 'fixed'}
+    demand_schedule = [{'from': start_time, 'to': end_time, 'ranges': [range2], 'stepmode': 'jittered'}
                        ]
 
     order_sched = {'sup': supply_schedule, 'dem': demand_schedule,
-    #              'interval': 30, 'timemode': 'drip-poisson'}
+                   'interval': 30, 'timemode': 'drip-poisson'}
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
-                   'interval': 30, 'timemode': 'periodic'}
+    #              'interval': 30, 'timemode': 'periodic'}
 
-    delay = False
+    delay = True
     noise_level = 0
 
-    buyers_spec = [('INSD', 10), ('ZIP', 10), ('ZIC', 10), ('SHVR', 10), ('GVWY', 10)]
-    sellers_spec = [('INSD', 10), ('ZIP', 10), ('ZIC', 10), ('SHVR', 10), ('GVWY', 10)]
+    buyers_spec = [('ZIP', 20)]
+    sellers_spec = [('ZIP', 20)]
 
     traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
@@ -2314,16 +2315,17 @@ if __name__ == "__main__":
     verbose = True
 
     # n_trials is how many trials (i.e. market sessions) to run in total
-    n_trials = 3
+    n_trials = 5
 
     # n_recorded is how many trials (i.e. market sessions) to write full data-files for
-    n_trials_recorded = 3
+    n_trials_recorded = 5
 
     tdump = open('records/avg_balance.csv', 'w')
 
     trial = 1
 
     trial_balances = []
+    equilibrium_prices = []
 
     while trial < (n_trials + 1):
         trial_id = 'sess%04d' % trial
@@ -2337,16 +2339,19 @@ if __name__ == "__main__":
         tdump.flush()
         trial = trial + 1
 
-        noise_level += 5
+        delay_level += 1
+        noise_level += 0
         noise = random.randint(-noise_level, noise_level)
 
-        is_figure1 = True
-        is_figure2 = True
-        is_figure3 = True
+        is_figure1 = False
+        is_figure2 = False
+        is_figure3 = False
         is_figure4 = True
+        is_figure5 = True
         is_last_trial = False
         if trial == n_trials + 1:
             is_last_trial = True
-        processResults.process_results(trial_id, trial_balances, is_last_trial, is_figure1, is_figure2, is_figure3, is_figure4)
+        processResults.process_results(trial_id, trial_balances, equilibrium_prices, is_last_trial,
+                                       is_figure1, is_figure2, is_figure3, is_figure4, is_figure5)
 
     tdump.close()
