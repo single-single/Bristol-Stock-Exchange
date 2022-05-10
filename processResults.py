@@ -56,7 +56,7 @@ def process_results(trial_id, trial_balances, equilibrium_prices, is_last_trial,
         x5 = trial_balances[8]
         y5 = trial_balances[9]
         plt.xlabel("Time")
-        plt.ylabel("Balance")
+        plt.ylabel("Balance (Giveaway)")
         plt.plot(x1, y1, color='r', label='trial1')
         plt.plot(x2, y2, color='g', label='trial2')
         plt.plot(x3, y3, color='b', label='trial3')
@@ -86,6 +86,6 @@ def process_results(trial_id, trial_balances, equilibrium_prices, is_last_trial,
         for a, b, i in zip(x, y, range(len(x))):
             plt.text(a, b + 0.5, "%.2f" % y[i], ha='center', fontsize=11)
         plt.ylim(80, 100)
-        plt.ylabel("Estimated Equilibrium Price")
+        plt.ylabel("Estimated Equilibrium Price (Giveaway)")
         plt.bar(x, y, width=0.4, color=["r", "g", "b", "orange", "purple"])
         plt.show()

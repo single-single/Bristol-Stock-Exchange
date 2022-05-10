@@ -2302,11 +2302,11 @@ if __name__ == "__main__":
     # Use 'periodic' if you want the traders' assignments to all arrive simultaneously & periodically
     #              'interval': 30, 'timemode': 'periodic'}
 
-    delay = True
+    delay = False
     noise_level = 0
 
-    buyers_spec = [('ZIP', 20)]
-    sellers_spec = [('ZIP', 20)]
+    buyers_spec = [('GVWY', 20)]
+    sellers_spec = [('GVWY', 20)]
 
     traders_spec = {'sellers': sellers_spec, 'buyers': buyers_spec}
 
@@ -2340,14 +2340,14 @@ if __name__ == "__main__":
         trial = trial + 1
 
         delay_level += 1
-        noise_level += 0
+        noise_level += 3
         noise = random.randint(-noise_level, noise_level)
 
         is_figure1 = False
         is_figure2 = False
         is_figure3 = False
         is_figure4 = True
-        is_figure5 = True
+        is_figure5 = False
         is_last_trial = False
         if trial == n_trials + 1:
             is_last_trial = True
